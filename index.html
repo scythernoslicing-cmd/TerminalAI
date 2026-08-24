@@ -25,8 +25,11 @@
       align-items: center;
       overflow: hidden;
       font-family: 'VT323', monospace;
-      color: #00ff00;
+      color: #70FFC2; /* Mint Phosphor Green */
       cursor: pointer;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: unset;
+      font-smooth: never;
     }
 
     /* Responsive Monitor Container */
@@ -52,33 +55,44 @@
       padding: 25px 30px;
     }
 
-    /* Video player sizing - slightly narrower and shifted left */
+    /* Video player sizing */
     .screen-video {
       position: absolute;
       top: 50%;
-      left: 48.5%; /* Shifted slightly left */
+      left: 48.5%;
       transform: translate(-50%, -50%);
-      width: 91%;  /* Slightly less wide */
+      width: 91%;
       height: 96%;
       object-fit: fill;
       z-index: 6;
-      border-radius: 8px; /* Curve video edges slightly for CRT glass look */
+      border-radius: 8px;
     }
 
-    /* Audio Unblock Click Overlay */
+    /* Centered Blinking Click-to-Start Overlay */
     #start-overlay {
       position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
       display: flex;
       justify-content: center;
       align-items: center;
-      background: rgba(0, 0, 0, 0.9);
-      color: #00ff00;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.95);
+      color: #70FFC2;
       font-size: 32px;
       font-weight: bold;
       z-index: 20;
-      text-align: center;
-      text-shadow: 0 0 10px #00ff00;
+      letter-spacing: 2px;
+      padding: 20px;
+      text-shadow: 0 0 3px #70FFC2, 0 0 6px rgba(112, 255, 194, 0.6);
+      animation: start-blink 1s infinite alternate;
+    }
+
+    @keyframes start-blink {
+      0% { opacity: 1; }
+      100% { opacity: 0.25; }
     }
 
     #terminal-content {
@@ -91,7 +105,7 @@
       width: 6px;
     }
     #terminal-content::-webkit-scrollbar-thumb {
-      background: rgba(0, 255, 0, 0.3);
+      background: rgba(112, 255, 194, 0.3);
       border-radius: 3px;
     }
 
@@ -103,52 +117,53 @@
       top: 0; left: 0; bottom: 0; right: 0;
       background: linear-gradient(
         rgba(18, 16, 16, 0) 50%, 
-        rgba(0, 0, 0, 0.3) 50%
+        rgba(0, 0, 0, 0.35) 50%
       );
       background-size: 100% 4px;
       z-index: 10;
       pointer-events: none;
     }
 
-    /* Bold VT323 Typography */
+    /* Crisp Mint Typography */
     #notepad {
       display: inline;
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: break-word;
       font-family: 'VT323', monospace;
-      font-size: 30px;
+      font-size: 32px;
       font-weight: bold;
-      line-height: 1.2;
-      letter-spacing: 1.5px;
-      text-shadow: 0 0 8px rgba(0, 255, 0, 0.9), 0 0 15px rgba(0, 255, 0, 0.4);
+      line-height: 1.15;
+      letter-spacing: 1px;
+      color: #70FFC2;
+      text-shadow: 0 0 2px #70FFC2, 0 0 5px rgba(112, 255, 194, 0.5);
       animation: ambient-glitch 5s infinite;
     }
 
     #user-input-buffer {
-      color: #00ff00;
+      color: #70FFC2;
       font-family: 'VT323', monospace;
-      font-size: 30px;
+      font-size: 32px;
       font-weight: bold;
-      line-height: 1.2;
-      letter-spacing: 1.5px;
-      text-shadow: 0 0 8px rgba(0, 255, 0, 0.9), 0 0 15px rgba(0, 255, 0, 0.4);
+      line-height: 1.15;
+      letter-spacing: 1px;
+      text-shadow: 0 0 2px #70FFC2, 0 0 5px rgba(112, 255, 194, 0.5);
     }
 
     @keyframes ambient-glitch {
       0%, 86%, 100% { transform: translate(0, 0) skew(0deg); filter: none; }
-      87% { transform: translate(-3px, 1px) skew(1deg); filter: drop-shadow(2px 0 0 rgba(255, 0, 0, 0.8)); }
-      88% { transform: translate(3px, -1px) skew(-1deg); filter: drop-shadow(-2px 0 0 rgba(0, 255, 255, 0.8)); }
-      89% { transform: translate(-1px, 2px); filter: none; }
+      87% { transform: translate(-2px, 1px) skew(0.5deg); filter: drop-shadow(1px 0 0 rgba(255, 0, 0, 0.8)); }
+      88% { transform: translate(2px, -1px) skew(-0.5deg); filter: drop-shadow(-1px 0 0 rgba(0, 255, 255, 0.8)); }
+      89% { transform: translate(-1px, 1px); filter: none; }
       90% { transform: translate(0, 0); }
-      94% { transform: translate(2px, -1px) skew(0.5deg); filter: drop-shadow(1px 0 0 rgba(0, 255, 0, 0.9)); }
+      94% { transform: translate(1px, -1px); filter: drop-shadow(1px 0 0 rgba(112, 255, 194, 0.9)); }
       95% { transform: translate(0, 0); }
     }
 
     .access-denied {
       color: #ff3333;
       font-weight: bold;
-      text-shadow: 0 0 10px #ff0000;
+      text-shadow: 0 0 4px #ff0000;
     }
 
     .access-granted {
@@ -157,19 +172,19 @@
     }
 
     @keyframes grant-blink {
-      0% { color: #ffff00; text-shadow: 0 0 12px #ffff00; }
-      100% { color: #00ff00; text-shadow: 0 0 12px #00ff00; }
+      0% { color: #ffff00; text-shadow: 0 0 5px #ffff00; }
+      100% { color: #70FFC2; text-shadow: 0 0 5px #70FFC2; }
     }
 
     .terminal-cursor {
       display: inline-block;
       width: 14px;
       height: 28px;
-      background-color: #00ff00;
+      background-color: #70FFC2;
       margin-left: 2px;
       vertical-align: sub;
       animation: blink 0.8s infinite;
-      box-shadow: 0 0 8px rgba(0, 255, 0, 0.9);
+      box-shadow: 0 0 4px #70FFC2;
     }
 
     @keyframes blink {
@@ -206,7 +221,7 @@
     }
 
     @keyframes crt-tear {
-      0% { filter: drop-shadow(2px 0 0 rgba(0, 255, 0, 0.6)); }
+      0% { filter: drop-shadow(2px 0 0 rgba(112, 255, 194, 0.6)); }
       50% { filter: drop-shadow(-2px 0 0 rgba(0, 255, 255, 0.6)); }
       100% { filter: drop-shadow(0 2px 0 rgba(255, 0, 0, 0.6)); }
     }
@@ -218,7 +233,7 @@
 
   <div class="monitor-wrapper">
     <div class="terminal-screen" id="screen">
-      
+
       <!-- Click Overlay -->
       <div id="start-overlay">[ CLICK TO INITIALIZE TERMINAL ]</div>
 
