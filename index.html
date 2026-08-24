@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal AI</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      width: 100vw;
+      background-color: black;
+      background-image: url('70SMONITOR.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      color: #00ff00;
+    }
+
+    /* Bounding box over the CRT screen glass */
+    .terminal-screen {
+      position: absolute;
+      top: 30%;
+      left: 30%;
+      transform: translate(-50%, -50%);
+      width: 46vw;
+      height: 40vh;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    .terminal-screen::-webkit-scrollbar {
+      width: 6px;
+    }
+    .terminal-screen::-webkit-scrollbar-thumb {
+      background: rgba(0, 255, 0, 0.3);
+      border-radius: 3px;
+    }
+
+    #notepad {
+      display: inline;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      font-size: 13px;
+      line-height: 1.4;
+      text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+    }
+
+    #user-input-buffer {
+      color: #00ff00;
+      font-size: 13px;
+      text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+    }
+
+    /* Red Access Denied Text */
+    .access-denied {
+      color: #ff3333;
+      font-weight: bold;
+      text-shadow: 0 0 6px #ff0000;
+    }
+
+    /* Blinking Yellow / Green Access Granted Text */
+    .access-granted {
+      font-weight: bold;
+      animation: grant-blink 0.5s infinite alternate;
+    }
+
+    @keyframes grant-blink {
+      0% {
+        color: #ffff00;
+        text-shadow: 0 0 8px #ffff00;
+      }
+      100% {
+        color: #00ff00;
+        text-shadow: 0 0 8px #00ff00;
+      }
+    }
+
+    .terminal-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 15px;
+      background-color: #00ff00;
+      margin-left: 2px;
+      vertical-align: middle;
+      animation: blink 0.8s infinite;
+      box-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Matrix canvas layer */
+    #matrix-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* CRT Glitch and Shake Effect */
+    .glitching {
+      animation: screen-shake 0.12s infinite;
+      filter: contrast(180%) brightness(120%);
+    }
+
+    @keyframes screen-shake {
+      0% { transform: translate(-50%, -50%) skew(0deg); }
+      25% { transform: translate(-52%, -48%) skew(1.5deg); filter: invert(80%); }
+      50% { transform: translate(-48%, -51%) skew(-1.5deg); }
+      75% { transform: translate(-51%, -49%) skew(0.5deg); }
+      100% { transform: translate(-50%, -50%) skew(0deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="terminal-screen" id="screen">
+    <canvas id="matrix-canvas"></canvas>
+    <span id="notepad"></span><span id="user-input-buffer"></span><span id="cursor" class="terminal-cursor"></span>
+  </div>
+
+  <script>
+    const sequence = [
+      "AMIBIOS (C) 1994 American Megatrends Inc.\n",
+      "CPU: CUSTOM BIO-PROCESSOR ARRAY @ 5.20 GHz\n",
+      "Memory Test: 134217728K OK (128 GB RAM)\n",
+      "Detecting Primary Storage...\n",
+      "[UCPLASTS_LINK_OK]\n",
+      "Loading MS-DOS SHIM...\n",
+      "C:\\> C:\\VANCE_SYS\\COMMS_ARR.EXE\n\n",
+      "SECURITY OVERRIDE REQUIRED.\n",
+      "ENTER SYSTEM PASSCODE:\n> "
+    ];
+
+    const notepad = document.getElementById("notepad");
+    const inputBuffer = document.getElementById("user-input-buffer");
+    const screenBox = document.getElementById("screen");
+    const canvas = document.getElementById("matrix-canvas");
+    const ctx = canvas.getContext("2d");
+
+    let lineIndex = 0;
+    let charIndex = 0;
+    let isBootComplete = false;
+    let userInput = "";
+    let matrixInterval = null;
+
+    // 1. Boot sequence typing logic
+    function typeWriter() {
+      if (lineIndex < sequence.length) {
+        const currentLine = sequence[lineIndex];
+        if (charIndex < currentLine.length) {
+          notepad.textContent += currentLine.charAt(charIndex);
+          charIndex++;
+          screenBox.scrollTop = screenBox.scrollHeight;
+          setTimeout(typeWriter, 30);
+        } else {
+          charIndex = 0;
+          lineIndex++;
+          setTimeout(typeWriter, 250);
+        }
+      } else {
+        isBootComplete = true; // Unlocks keyboard typing
+      }
+    }
+
+    // 2. Keyboard Input Handler
+    window.addEventListener("keydown", (e) => {
+      if (!isBootComplete) return;
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        processCommand();
+      } else if (e.key === "Backspace") {
+        if (userInput.length > 0) {
+          userInput = userInput.slice(0, -1);
+          inputBuffer.textContent = userInput;
+        }
+      } else if (e.key.length === 1) {
+        userInput += e.key;
+        inputBuffer.textContent = userInput;
+      }
+    });
+
+    // 3. Password Verification Logic
+    function processCommand() {
+      const cleanInput = userInput.trim().toLowerCase();
+      
+      // Commit typed line to history log
+      notepad.textContent += userInput + "\n";
+      userInput = "";
+      inputBuffer.textContent = "";
+
+      if (cleanInput === "prophet") {
+        // Correct Passcode
+        const grantedSpan = document.createElement("span");
+        grantedSpan.className = "access-granted";
+        grantedSpan.textContent = "ACCESS GRANTED\n";
+        notepad.appendChild(grantedSpan);
+        
+        // Trigger Matrix Glitch
+        startSystemGlitch();
+      } else {
+        // Wrong Passcode
+        const deniedSpan = document.createElement("span");
+        deniedSpan.className = "access-denied";
+        deniedSpan.textContent = "ACCESS DENIED\n";
+        notepad.appendChild(deniedSpan);
+        
+        // Return to command prompt for retry
+        notepad.appendChild(document.createTextNode("> "));
+      }
+
+      screenBox.scrollTop = screenBox.scrollHeight;
+    }
+
+    // 4. Glitch & Matrix Rain Generator
+    function startSystemGlitch() {
+      screenBox.classList.add("glitching");
+      canvas.style.display = "block";
+
+      canvas.width = screenBox.clientWidth;
+      canvas.height = screenBox.clientHeight;
+
+      const chars = "010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101010101";
+      const fontSize = 12;
+      const columns = Math.floor(canvas.width / fontSize);
+      const drops = Array(columns).fill(1);
+
+      if (matrixInterval) clearInterval(matrixInterval);
+
+      matrixInterval = setInterval(() => {
+        ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = "#00ff00";
+        ctx.font = fontSize + "px monospace";
+
+        for (let i = 0; i < drops.length; i++) {
+          const text = chars.charAt(Math.floor(Math.random() * chars.length));
+          ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+          if (drops[i] * fontSize > canvas.height && Math.random() > 0.95) {
+            drops[i] = 0;
+          }
+          drops[i]++;
+        }
+      }, 33);
+    }
+
+    window.onload = typeWriter;
+  </script>
+
+</body>
+</html>
