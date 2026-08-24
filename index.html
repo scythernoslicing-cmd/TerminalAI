@@ -22,6 +22,7 @@
       overflow: hidden;
       font-family: 'Courier New', Courier, monospace;
       color: #00ff00;
+      cursor: pointer;
     }
 
     /* Bounding box over the CRT screen glass */
@@ -49,7 +50,7 @@
       white-space: pre-wrap;
       word-break: break-word;
       overflow-wrap: break-word;
-      font-size: 13px;
+      font-size: 15px;
       line-height: 1.4;
       text-shadow: 0 0 5px rgba(0, 255, 0, 0.7);
     }
@@ -100,6 +101,14 @@
       50% { opacity: 0; }
     }
 
+    /* Invisible helper input for mobile & focus locking */
+    #hidden-input {
+      position: absolute;
+      opacity: 0;
+      top: -1000px;
+      left: -1000px;
+    }
+
     /* Matrix canvas layer */
     #matrix-canvas {
       position: absolute;
@@ -129,6 +138,9 @@
 </head>
 <body>
 
+  <!-- Invisible field to trigger virtual/hardware keyboard focus -->
+  <input type="text" id="hidden-input" autocomplete="off" spellcheck="false" autofocus />
+
   <div class="terminal-screen" id="screen">
     <canvas id="matrix-canvas"></canvas>
     <span id="notepad"></span><span id="user-input-buffer"></span><span id="cursor" class="terminal-cursor"></span>
@@ -151,12 +163,12 @@
     const inputBuffer = document.getElementById("user-input-buffer");
     const screenBox = document.getElementById("screen");
     const canvas = document.getElementById("matrix-canvas");
+    const hiddenInput = document.getElementById("hidden-input");
     const ctx = canvas.getContext("2d");
 
     let lineIndex = 0;
     let charIndex = 0;
     let isBootComplete = false;
-    let userInput = "";
     let matrixInterval = null;
 
     // 1. Boot sequence typing logic
@@ -175,34 +187,42 @@
         }
       } else {
         isBootComplete = true; // Unlocks keyboard typing
+        hiddenInput.focus();
       }
     }
 
-    // 2. Keyboard Input Handler
-    window.addEventListener("keydown", (e) => {
+    // 2. Click screen to focus input (opens phone keyboard if on mobile)
+    document.addEventListener("click", () => {
+      if (isBootComplete) {
+        hiddenInput.focus();
+      }
+    });
+
+    // 3. Update typing buffer live
+    hiddenInput.addEventListener("input", () => {
+      if (!isBootComplete) return;
+      inputBuffer.textContent = hiddenInput.value;
+      screenBox.scrollTop = screenBox.scrollHeight;
+    });
+
+    // 4. Listen for Enter key submit
+    hiddenInput.addEventListener("keydown", (e) => {
       if (!isBootComplete) return;
 
       if (e.key === "Enter") {
         e.preventDefault();
         processCommand();
-      } else if (e.key === "Backspace") {
-        if (userInput.length > 0) {
-          userInput = userInput.slice(0, -1);
-          inputBuffer.textContent = userInput;
-        }
-      } else if (e.key.length === 1) {
-        userInput += e.key;
-        inputBuffer.textContent = userInput;
       }
     });
 
-    // 3. Password Verification Logic
+    // 5. Password Verification Logic
     function processCommand() {
+      const userInput = hiddenInput.value;
       const cleanInput = userInput.trim().toLowerCase();
       
       // Commit typed line to history log
       notepad.textContent += userInput + "\n";
-      userInput = "";
+      hiddenInput.value = "";
       inputBuffer.textContent = "";
 
       if (cleanInput === "prophet") {
@@ -228,7 +248,7 @@
       screenBox.scrollTop = screenBox.scrollHeight;
     }
 
-    // 4. Glitch & Matrix Rain Generator
+    // 6. Glitch & Matrix Rain Generator
     function startSystemGlitch() {
       screenBox.classList.add("glitching");
       canvas.style.display = "block";
