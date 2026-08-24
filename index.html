@@ -159,10 +159,23 @@
   </style>
 </head>
 <body>
-
+  .terminal-screen {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 58vw;
+  height: 52vh;
+  overflow-y: auto;
+  font-size: 14px;
+  box-sizing: border-box;
+  padding: 15px;
+}
+  <div class="terminal-screen">
   <div id="notepad"></div><span id="cursor" class="terminal-cursor"></span>
   
   <div id="matrix-container"></div>
+  </div>
 
   <script>
     const sequence = [
