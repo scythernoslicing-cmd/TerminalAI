@@ -287,34 +287,46 @@
     let charIndex = 0;
     let isBootComplete = false;
     let isProcessing = false;
-    let typingTimeout;
 
     sfxAmbient.volume = 0.4;
 
-    // Cut ambient background track 4 seconds before natural end
+    // Safely cut ambient background track 4 seconds before natural end
     sfxAmbient.addEventListener("timeupdate", () => {
-      if (sfxAmbient.duration && sfxAmbient.currentTime >= (sfxAmbient.duration - 4)) {
-        sfxAmbient.pause();
+      if (sfxAmbient.duration && !isNaN(sfxAmbient.duration) && sfxAmbient.duration > 4) {
+        if (sfxAmbient.currentTime >= (sfxAmbient.duration - 4)) {
+          sfxAmbient.pause();
+        }
       }
     });
 
-    // Helper: Plays a single key press sound pulse (100ms duration)
+    // Single key click sound pulse
     function playSingleKeyClick() {
-      clearTimeout(typingTimeout);
-      sfxTyping.currentTime = 0;
-      sfxTyping.play().catch(err => console.log("Typing Audio Error:", err));
+      const clickInstance = sfxTyping.cloneNode();
+      clickInstance.volume = 0.5;
+      clickInstance.play().catch(err => console.log("Typing Audio Error:", err));
       
-      typingTimeout = setTimeout(() => {
-        sfxTyping.pause();
+      setTimeout(() => {
+        clickInstance.pause();
+        clickInstance.remove();
       }, 100);
     }
 
     // 1. Initial User Click
     startOverlay.addEventListener("click", () => {
+      // Play mouse click sound
       sfxMouse.currentTime = 0;
       sfxMouse.play().catch(err => console.log("Mouse Audio Error:", err));
 
-      sfxAmbient.play().catch(err => console.log("Ambient Audio Error:", err));
+      // Trigger ambient audio immediately on user interaction
+      sfxAmbient.currentTime = 0;
+      const ambientPromise = sfxAmbient.play();
+      
+      if (ambientPromise !== undefined) {
+        ambientPromise.catch(err => {
+          console.log("Ambient Audio Playback Error:", err);
+          sfxAmbient.play();
+        });
+      }
 
       startOverlay.style.display = "none";
       introVideo.style.display = "block";
@@ -357,13 +369,12 @@
       }
     });
 
-    // 4. Keyboard Input & Single-Key Sound Triggering
+    // 4. Keyboard Input & Sound Effects
     hiddenInput.addEventListener("input", () => {
       if (!isBootComplete || isProcessing) return;
 
       const currentVal = hiddenInput.value;
 
-      // Trigger a single click burst per character typed
       if (currentVal.length > inputBuffer.textContent.length) {
         playSingleKeyClick();
       }
