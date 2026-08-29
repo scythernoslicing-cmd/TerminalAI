@@ -1041,33 +1041,54 @@
       }
     }
 
-    // Mobile browsers require focus() to happen directly from a user gesture
-    // before they will open the virtual keyboard. The original document-level
-    // click handler is not reliable because the transparent input itself sits
-    // above the terminal and receives the tap first.
-    function focusTerminalInput() {
-      if (!isBootComplete || isProcessing ||
-          shutdownWindow.style.display !== "none" ||
-          warningWindow.style.display !== "none" ||
-          interactionPhase === "SHUTDOWN") return;
-
-      hiddenInput.focus({ preventScroll: true });
+    // Keep the terminal input focusable on both desktop and mobile.
+    // IMPORTANT: elements whose CSS says `display: none` have an empty
+    // element.style.display value until an inline style is assigned, so
+    // checking `style.display === "none"` can incorrectly block focus.
+    function terminalOverlayIsOpen(element) {
+      return window.getComputedStyle(element).display !== "none";
     }
 
-    // The input is the actual touch target on mobile, so focus it directly.
-    // pointerdown works on modern iOS Safari and Android Chrome; touchstart
-    // is retained as a fallback for older mobile WebViews.
+    function focusTerminalInput(fromUserGesture = false) {
+      if (!isBootComplete || isProcessing || interactionPhase === "SHUTDOWN") return;
+      if (terminalOverlayIsOpen(shutdownWindow) || terminalOverlayIsOpen(warningWindow)) return;
+
+      // Mobile Safari/Chrome will only open the keyboard when focus occurs
+      // as part of an actual user gesture. Calling this from touchstart or
+      // pointerdown preserves that gesture.
+      try {
+        hiddenInput.focus({ preventScroll: true });
+      } catch (e) {
+        hiddenInput.focus();
+      }
+    }
+
+    // The invisible input is deliberately the interactive layer over the CRT.
+    // A real touch/pointer event gives iOS and Android permission to open the
+    // virtual keyboard.
     hiddenInput.addEventListener("pointerdown", () => {
-      if (isMobileDevice) focusTerminalInput();
+      focusTerminalInput(true);
     });
 
     hiddenInput.addEventListener("touchstart", () => {
-      if (isMobileDevice) focusTerminalInput();
+      focusTerminalInput(true);
+    }, { passive: true });
+
+    // Also allow tapping anywhere in the CRT, including if the browser does
+    // not dispatch the expected pointer event to the transparent input.
+    document.getElementById("screen").addEventListener("pointerdown", (e) => {
+      if (e.target === hiddenInput) return;
+      focusTerminalInput(true);
+    });
+
+    document.getElementById("screen").addEventListener("touchstart", (e) => {
+      if (e.target === hiddenInput) return;
+      focusTerminalInput(true);
     }, { passive: true });
 
     document.addEventListener("click", (e) => {
       if (e.target === hiddenInput) return;
-      focusTerminalInput();
+      focusTerminalInput(true);
     });
 
     function handlePreHostQuestion(input) {
